@@ -1,0 +1,34 @@
+#  准备两台安装了MySQL的linux，
+#  主库192.168.200.131，从库192.168.200.132
+
+# 配置主库
+# 修改MySQL的配置文件/etc/my.cnf
+log-bin=mysql-bin   # 启用二进制日志
+server-id=100       # 服务器唯一id
+
+# 重启MySQL服务
+systenctl restart mysqld
+
+# 授权，从库通过该用户进行主从复制
+grant replication slave on *.* to 'xiaozhang'@'%' identified by '1234';
+
+# 查看file和position的值
+show master status; # 执行完后不要再执行任何操作
+
+
+
+
+# 配置从库
+# 修改MySQL的配置文件/etc/my.cnf
+# [mysqld]
+server-id=101 # 服务器唯一id
+
+# 重启MySQL服务
+systenctl restart mysqld
+
+change master to master_host ='192.168.200.131',master_user = 'xiaozhang',
+master_password = '1234', master_log_file = xxx, master_log_pos = xxx;
+
+start slave ;
+
+
