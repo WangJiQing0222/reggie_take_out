@@ -71,4 +71,4 @@ mybatis-plus:
       id-type: ASSIGN_ID
 
 reggie:
-  path: src/main/resources/images/
+  path: /usr/local/img/
