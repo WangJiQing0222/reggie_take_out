@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpSession;
+
 /**
  * @author 小飞侠NO.1
  * @startTime 18:06:29
@@ -27,9 +29,9 @@ public class OrderController {
      * @return
      */
     @PostMapping("/submit")
-    public R<String> submit(@RequestBody Orders orders){
+    public R<String> submit(@RequestBody Orders orders, HttpSession session){
         log.info("订单数据:{}", orders);
-        orderService.submit(orders);
+        orderService.submit(orders, session);
         return R.success("下单成功");
     }
 

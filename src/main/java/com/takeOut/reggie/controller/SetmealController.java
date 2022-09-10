@@ -61,7 +61,7 @@ public class SetmealController {
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize, String name){
         //分页构造器对象
-        Page<Setmeal> pageInfo = new Page<>();
+        Page<Setmeal> pageInfo = new Page<>(page, pageSize);
         Page<SetmealDto> dtoPage = new Page<>();
 
         //添加分页条件
@@ -103,6 +103,11 @@ public class SetmealController {
     @CacheEvict(value = "setmealCache", allEntries = true)
     public R<String> delete(@RequestParam(value = "ids") List<Long> ids){
         log.info("ids:{}", ids);
+
+        if(ids.size() == 0){
+            return R.error("哥，未选中，不能给删除哦-_-");
+        }
+
         setmealService.removeWithDish(ids);
         return R.success("套餐数据删除成功");
     }
@@ -125,5 +130,39 @@ public class SetmealController {
         List<Setmeal> list = setmealService.list(queryWrapper);
 
         return R.success(list);
+    }
+
+    /**
+     * 菜品停售或者起售
+     * @param status
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    public R<String> changeStatus(@PathVariable Integer status, @RequestParam List<Long> ids){
+        log.info("c");
+        boolean flag = setmealService.changeStatus(status, ids);
+        return flag == true ? R.success("套餐状态改变成功") : R.error("套餐状态改变失败");
+    }
+
+    /**
+     * 根据setmealId查询
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public R<SetmealDto> get(@PathVariable Long id){
+        SetmealDto setmealDto = setmealService.getByIdWithDish(id);
+        return R.success(setmealDto);
+    }
+
+    @PutMapping
+    public R<String> update(@RequestBody SetmealDto setmealDto){
+        log.info("更新套餐:{}", setmealDto.toString());
+
+        setmealService.updateWithDish(setmealDto);
+
+
+        return R.success("更新套餐成功");
     }
 }

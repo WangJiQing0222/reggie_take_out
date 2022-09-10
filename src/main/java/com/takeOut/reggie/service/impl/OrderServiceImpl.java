@@ -3,7 +3,6 @@ package com.takeOut.reggie.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.takeOut.reggie.common.BaseContext;
 import com.takeOut.reggie.common.CustomeException;
 import com.takeOut.reggie.entity.*;
 import com.takeOut.reggie.mapper.OrderMapper;
@@ -13,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,9 +43,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      * @param orders
      */
     @Transactional
-    public void submit(Orders orders) {
+    public void submit(Orders orders, HttpSession session) {
         //获得当前用户id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = (Long) session.getAttribute("user");
 
         //查询当前用户购物车数据
         LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<>();

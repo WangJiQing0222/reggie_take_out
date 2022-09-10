@@ -53,12 +53,12 @@ public class EmployeeController {
 
         //3、如果没有查到则返回登录失败结果
         if(emp == null){
-            return R.error("登录失败");
+            return R.error("登录失败，数据库中没有该员工");
         }
 
         //4、密码比对，如果不一致则返回登录失败结果
         if(!emp.getPassword().equals(password)){
-            return R.error("登录失败");
+            return R.error("登录失败，密码错误");
         }
 
         //5、查看员工状态，如果为已禁用状态，则返回已禁用结果
@@ -120,6 +120,7 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/page")
+//    @Cacheable(cacheNames = "employeePageCache", key = "'employeePage_' + #page + '_' + #pageSize + '_' + #name")
     public R<Page> page(int page, int pageSize, String name){
         log.info("page = {}, pageSize = {}, name = {}", page, pageSize, name);
 
@@ -128,7 +129,7 @@ public class EmployeeController {
         //构造条件构造器
         LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
         //添加过滤条件
-        queryWrapper.like(StringUtils.isNotEmpty(name), Employee::getUsername, name);
+        queryWrapper.like(StringUtils.isNotEmpty(name), Employee::getName, name);
         //添加分页条件
         queryWrapper.orderByDesc(Employee::getUpdateTime);
         //执行查询
@@ -145,9 +146,8 @@ public class EmployeeController {
      * @return
      */
     @PutMapping
+//    @CacheEvict(cacheNames = "employeeByIdCache", key = "'employeeById_' + #id ")
     public R<String> update(HttpServletRequest request, @RequestBody Employee employee){
-
-
         log.info(employee.toString());
 
         Long empId = (Long) request.getSession().getAttribute("employee");
@@ -165,6 +165,7 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/{id}")
+//    @Cacheable(cacheNames = "employeeByIdCache", key = "'employeeById_' + #id ")
     public R<Employee> getById(@PathVariable Long id){
         log.info("根据id查询员工信息");
         Employee employee = employeeService.getById(id);

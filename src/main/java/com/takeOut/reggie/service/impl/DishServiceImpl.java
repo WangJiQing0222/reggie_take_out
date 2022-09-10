@@ -2,6 +2,7 @@ package com.takeOut.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.takeOut.reggie.common.CustomeException;
 import com.takeOut.reggie.dto.DishDto;
 import com.takeOut.reggie.entity.Dish;
 import com.takeOut.reggie.entity.DishFlavor;
@@ -65,7 +66,6 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         LambdaQueryWrapper<DishFlavor> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(DishFlavor::getDishId, dish.getId());
         List<DishFlavor> flavors = dishFlavorService.list(queryWrapper);
-
         dishDto.setFlavors(flavors);
 
         return dishDto;
@@ -94,4 +94,62 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
 
         dishFlavorService.saveBatch(flavors);
     }
+
+    /**
+     * 删除菜品(停售) 和对应的口味
+     * @param ids
+     * @return
+     */
+    @Override
+    public boolean remove(List<Long> ids) {
+        List<Dish> dishes = super.listByIds(ids);
+        for(Dish dish : dishes){
+            if(dish.getStatus() == 1) {
+                // 如果状态为1(起售) 删除失败
+                throw new CustomeException("删除失败，删除的条目中含有未停售的菜品");
+            }
+        }
+
+        //删除对应的菜品表数据
+        boolean flag1 = super.removeByIds(ids);
+
+        //删除对应的口味表数据
+        LambdaQueryWrapper<DishFlavor> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(DishFlavor::getDishId, ids);
+        boolean flag2 = dishFlavorService.remove(queryWrapper);
+
+        return flag1 && flag2;
+    }
+
+    /**
+     * 改变状态
+     * @param status
+     * @param ids
+     * @return
+     */
+    @Override
+    public boolean changeStatus(Integer status, List<Long> ids) {
+        //停售
+        if(status == 0){
+            List<Dish> dishes = super.listByIds(ids);
+            if (dishes != null){
+                for(Dish dish : dishes)
+                    dish.setStatus(0);//改变状态为停售
+
+                updateBatchById(dishes);
+                return true;
+            }
+        }else {     //起售
+            List<Dish> dishes = super.listByIds(ids);
+            if (dishes != null){
+                for(Dish dish : dishes)
+                    dish.setStatus(1);//改变状态为起售
+
+                updateBatchById(dishes);
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

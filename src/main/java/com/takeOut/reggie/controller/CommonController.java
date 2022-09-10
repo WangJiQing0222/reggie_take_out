@@ -37,7 +37,7 @@ public class CommonController {
     @PostMapping("/upload")
     public R<String> upload( MultipartFile file){
         //file是一个临时文件， 需要转存到指定位置， 否则本次请求完成后临时文件会删除
-        log.info(file.toString());
+        log.info("文件上传,文件名:{}", file.toString());
 
         //创建一个目录对象
         File dir = new File(basePath);
@@ -73,6 +73,8 @@ public class CommonController {
      */
     @GetMapping("/download")
     public void download(String name, HttpServletResponse response){
+        log.info("文件下载,文件名:{}", name);
+
         try {
             FileInputStream fileInputStream = new FileInputStream(new File(basePath + name));
             ServletOutputStream outputStream = response.getOutputStream();

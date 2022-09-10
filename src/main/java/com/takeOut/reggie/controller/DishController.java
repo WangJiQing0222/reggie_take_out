@@ -133,7 +133,7 @@ public class DishController {
      */
     @PutMapping
     public R<String> update(@RequestBody DishDto dishDto){
-        log.info(dishDto.toString());
+        log.info("更新菜品:{}", dishDto.toString());
 
         //清理所有菜品的缓存数据(全部)
 //        Set keys = redisTemplate.keys("dish_*");
@@ -145,7 +145,7 @@ public class DishController {
 
         dishService.updateWithFlavor(dishDto);
 
-        return R.success("新增菜品成功");
+        return R.success("更新菜品成功");
     }
 
 
@@ -219,6 +219,31 @@ public class DishController {
         redisTemplate.opsForValue().set(key, dishDtoList, 60, TimeUnit.MINUTES);
 
         return R.success(dishDtoList);
+    }
+
+    /**
+     * 删除菜品
+     * @param ids
+     * @return
+     */
+    @DeleteMapping
+    public R<String> delete(@RequestParam List<Long> ids){
+        log.info("通过ids：{}删除", ids);
+        boolean flag = dishService.remove(ids);
+        return flag == true ? R.success("删除成功") : R.error("删除失败");
+    }
+
+    /**
+     * 改变状态
+     * @param status
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    public R<String> changeStatus(@PathVariable("status") Integer status, @RequestParam List<Long> ids){
+        log.info("菜品停售或者起售");
+        boolean flag = dishService.changeStatus(status, ids);
+        return flag == true ? R.success("菜品改变状态成功") : R.error("菜品改变状态失败");
     }
 
 }
