@@ -2,7 +2,6 @@ package com.takeOut.reggie.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.takeOut.reggie.common.BaseContext;
 import com.takeOut.reggie.common.R;
 import com.takeOut.reggie.entity.AddressBook;
 import com.takeOut.reggie.service.AddressBookService;
@@ -10,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import java.util.List;
 
 /**
@@ -26,24 +26,29 @@ public class AddressBookController {
     private AddressBookService addressBookService;
 
     /**
-     * 新增
+     * 新增地址
+     * @param addressBook
+     * @return
      */
     @PostMapping
-    public R<AddressBook> save(@RequestBody AddressBook addressBook) {
-        addressBook.setUserId(BaseContext.getCurrentId());
+    public R<AddressBook> save(@RequestBody AddressBook addressBook, HttpSession session) {
         log.info("addressBook:{}", addressBook);
+
+        addressBook.setUserId((Long) session.getAttribute("user"));
         addressBookService.save(addressBook);
         return R.success(addressBook);
     }
 
     /**
      * 设置默认地址
+     * @param addressBook
+     * @return
      */
     @PutMapping("default")
-    public R<AddressBook> setDefault(@RequestBody AddressBook addressBook) {
+    public R<AddressBook> setDefault(@RequestBody AddressBook addressBook, HttpSession session) {
         log.info("addressBook:{}", addressBook);
         LambdaUpdateWrapper<AddressBook> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(AddressBook::getUserId, BaseContext.getCurrentId());
+        wrapper.eq(AddressBook::getUserId, session.getAttribute("user"));
         wrapper.set(AddressBook::getIsDefault, 0);
         //SQL:update address_book set is_default = 0 where user_id = ?
         addressBookService.update(wrapper);
@@ -71,9 +76,9 @@ public class AddressBookController {
      * 查询默认地址
      */
     @GetMapping("default")
-    public R<AddressBook> getDefault() {
+    public R<AddressBook> getDefault(HttpSession session) {
         LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AddressBook::getUserId, BaseContext.getCurrentId());
+        queryWrapper.eq(AddressBook::getUserId, session.getAttribute("user"));
         queryWrapper.eq(AddressBook::getIsDefault, 1);
 
         //SQL:select * from address_book where user_id = ? and is_default = 1
@@ -90,9 +95,10 @@ public class AddressBookController {
      * 查询指定用户的全部地址
      */
     @GetMapping("/list")
-    public R<List<AddressBook>> list(AddressBook addressBook) {
-        addressBook.setUserId(BaseContext.getCurrentId());
+    public R<List<AddressBook>> list(AddressBook addressBook, HttpSession session) {
+        addressBook.setUserId((Long) session.getAttribute("user"));
         log.info("addressBook:{}", addressBook);
+        log.info("session中的用户id:{}", session.getAttribute("user"));
 
         //条件构造器
         LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();

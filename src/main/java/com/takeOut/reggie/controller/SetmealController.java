@@ -105,7 +105,7 @@ public class SetmealController {
         log.info("ids:{}", ids);
 
         if(ids.size() == 0){
-            return R.error("哥，未选中，不能给删除哦-_-");
+            return R.error("小哥哥/小姐姐，未选中，不能给删除哦-_-");
         }
 
         setmealService.removeWithDish(ids);

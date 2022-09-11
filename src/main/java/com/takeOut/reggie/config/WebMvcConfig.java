@@ -3,6 +3,7 @@ package com.takeOut.reggie.config;
 import com.takeOut.reggie.common.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -43,5 +44,10 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
         messageConventer.setObjectMapper(new JacksonObjectMapper());
         //将上面的消息转换器对象 添加到mvc框架的转换器集合中
         converters.add(0, messageConventer);
+    }
+
+    @Override
+    protected void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new StringToDateConvert());
     }
 }

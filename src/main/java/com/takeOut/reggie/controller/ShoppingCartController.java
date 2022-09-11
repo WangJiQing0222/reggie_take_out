@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import javax.servlet.http.HttpSession;
 import java.util.List;
 
 /**
@@ -33,37 +33,8 @@ public class ShoppingCartController {
     public R<ShoppingCart> add(@RequestBody ShoppingCart shoppingCart) {
         log.info("购物车数据:{}", shoppingCart);
 
-        //设置用户id，指定当前是哪个用户的购物车数据
-        Long currentId = BaseContext.getCurrentId();
-        shoppingCart.setUserId(currentId);
+        ShoppingCart cartServiceOne = shoppingCartService.add(shoppingCart);
 
-        //查询当前菜品或套餐是否在购物车中
-        Long dishId = shoppingCart.getDishId();
-
-        LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ShoppingCart::getUserId, shoppingCart.getUserId());
-
-        if (dishId != null) {
-            //添加到购物车的是菜品
-            queryWrapper.eq(ShoppingCart::getDishId, shoppingCart.getDishId());
-        } else {
-            //添加到购物车的是套餐
-            queryWrapper.eq(ShoppingCart::getSetmealId, shoppingCart.getSetmealId());
-        }
-
-        ShoppingCart cartServiceOne = shoppingCartService.getOne(queryWrapper);
-        if (cartServiceOne != null) {
-            //如果存在，则在原来的数量上加一
-            Integer number = cartServiceOne.getNumber();
-            cartServiceOne.setNumber(number + 1);
-            shoppingCartService.updateById(cartServiceOne);
-        } else {
-            //如果不存在，则添加到购物车，数量默认就是一
-            shoppingCart.setNumber(1);
-            shoppingCart.setCreateTime(LocalDateTime.now());
-            shoppingCartService.save(shoppingCart);
-            cartServiceOne = shoppingCart;//因为save完就会shoppingCart的id已经被赋值了
-        }
         return R.success(cartServiceOne);
     }
 
@@ -103,10 +74,10 @@ public class ShoppingCartController {
      * @return
      */
     @GetMapping("/list")
-    public R<List<ShoppingCart>> list() {
+    public R<List<ShoppingCart>> list(HttpSession session) {
         log.info("查看购物车...");
         LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ShoppingCart::getUserId, BaseContext.getCurrentId());
+        queryWrapper.eq(ShoppingCart::getUserId, session.getAttribute("user"));
         queryWrapper.orderByAsc(ShoppingCart::getCreateTime);
 
         List<ShoppingCart> list = shoppingCartService.list(queryWrapper);
