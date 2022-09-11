@@ -1,6 +1,5 @@
 package com.takeOut.reggie.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.takeOut.reggie.common.R;
 import com.takeOut.reggie.entity.Category;
@@ -43,14 +42,8 @@ public class CategoryController {
      */
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize){
-        //分页构造器
-        Page<Category> pageInfo = new Page<>();
-        //条件构造器
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.orderByAsc(Category::getSort);
+        Page<Category> pageInfo = categoryService.page(page, pageSize);
 
-        //进行分页查询
-        categoryService.page(pageInfo, queryWrapper);
         log.info("pageInfo:{}", pageInfo);
         return R.success(pageInfo);
     }
@@ -93,12 +86,9 @@ public class CategoryController {
      */
     @GetMapping("/list")
     public R<List<Category>> list(Category category){
-        //条件构造器
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(category.getType() != null, Category::getType, category.getType());
-        queryWrapper.orderByAsc(Category::getSort).orderByDesc(Category::getUpdateTime);
+        log.info("查询分类数据");
 
-        List<Category> list = categoryService.list(queryWrapper);
+        List<Category> list = categoryService.list(category);
 
         return R.success(list);
     }

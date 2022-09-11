@@ -25,7 +25,6 @@ import java.util.UUID;
 @RequestMapping("/common")
 public class CommonController {
 
-
     @Value("${reggie.path}")
     private String basePath;
 

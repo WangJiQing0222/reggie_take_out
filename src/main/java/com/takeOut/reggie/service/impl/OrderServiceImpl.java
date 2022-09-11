@@ -2,12 +2,15 @@ package com.takeOut.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.takeOut.reggie.common.CustomeException;
+import com.takeOut.reggie.dto.OrderDto;
 import com.takeOut.reggie.entity.*;
 import com.takeOut.reggie.mapper.OrderMapper;
 import com.takeOut.reggie.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,5 +110,128 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
 
         //清空购物车数据
         shoppingCartService.remove(wrapper);
+    }
+
+    /**
+     * 订单展示
+     * @param page
+     * @param pageSize
+     * @param number
+     * @param beginTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public Page<OrderDto> page(int page, int pageSize, Long number, LocalDateTime beginTime, LocalDateTime endTime) {
+
+        Page<Orders> pageInfo = new Page<>(page, pageSize);
+        Page<OrderDto> orderDtoPage = new Page<>();
+
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(number != null, Orders::getNumber, number);
+        queryWrapper.ge(beginTime != null, Orders::getOrderTime, beginTime);
+        queryWrapper.le(endTime != null, Orders::getCheckoutTime, endTime);
+        queryWrapper.orderByAsc(endTime != null, Orders::getCheckoutTime);
+
+        this.page(pageInfo, queryWrapper);//查询orders到pageInfo
+
+        BeanUtils.copyProperties(pageInfo, orderDtoPage, "records");
+
+        //设置records含有orderDetail 订单明细
+        List<Orders> records = pageInfo.getRecords();
+        List<OrderDto> list = records.stream().map((item) -> {
+            OrderDto orderDto = new OrderDto();
+            BeanUtils.copyProperties(item, orderDto);
+
+            if (item != null) {
+                LambdaQueryWrapper<OrderDetail> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(OrderDetail::getOrderId, item.getId());
+
+                orderDto.setOrderDetails(orderDetailService.list(wrapper));//设置orderDetails
+            }
+
+            return orderDto;
+        }).collect(Collectors.toList());
+
+        orderDtoPage.setRecords(list);//设置records
+
+        return orderDtoPage;
+    }
+
+    /**
+     * 用户页面
+     * @param page
+     * @param pageSize
+     * @param session
+     * @return
+     */
+    @Override
+    public Page<OrderDto> userPage(int page, int pageSize, HttpSession session) {
+
+        Page<Orders> pageInfo = new Page<>(page, pageSize);
+        Page<OrderDto> orderDtoPage = new Page<>();
+
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Orders::getUserId, session.getAttribute("user"));
+        this.page(pageInfo, queryWrapper);
+
+        BeanUtils.copyProperties(pageInfo, orderDtoPage, "records");
+
+        List<Orders> records = pageInfo.getRecords();
+        List<OrderDto> list = records.stream().map((item) -> {
+            OrderDto orderDto = new OrderDto();
+            BeanUtils.copyProperties(item, orderDto);
+
+            LambdaQueryWrapper<OrderDetail> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(OrderDetail::getOrderId, item.getId());
+            List<OrderDetail> orderDetails = orderDetailService.list(wrapper);
+
+            orderDto.setOrderDetails(orderDetails);
+
+            return orderDto;
+        }).collect(Collectors.toList());
+
+        orderDtoPage.setRecords(list);
+
+        return orderDtoPage;
+
+    }
+
+    /**
+     * 再来一单
+     * @param orders
+     * @param session
+     * @return
+     */
+    @Override
+    public boolean again(Orders orders, HttpSession session) {
+        //根据订单号 查询订单明细表
+        LambdaQueryWrapper<OrderDetail> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(orders.getId() != null, OrderDetail::getOrderId, orders.getId());
+        List<OrderDetail> orderDetails = orderDetailService.list(queryWrapper);
+
+        List<ShoppingCart> shoppingCartList = orderDetails.stream().map((item) -> {
+            ShoppingCart shoppingCart = new ShoppingCart();
+
+            //将订单明细表的数据添加到购物车里
+            shoppingCart.setUserId((Long) session.getAttribute("user"));
+            shoppingCart.setName(item.getName());
+            shoppingCart.setImage(item.getImage());
+            shoppingCart.setDishId(item.getDishId());
+            shoppingCart.setSetmealId(item.getSetmealId());
+            shoppingCart.setDishFlavor(item.getDishFlavor());
+            shoppingCart.setNumber(item.getNumber());
+            shoppingCart.setAmount(item.getAmount());
+
+            return shoppingCart;
+        }).collect(Collectors.toList());
+
+        boolean flag = shoppingCartService.saveBatch(shoppingCartList);
+
+        this.removeById(orders.getId());
+        orderDetailService.remove(queryWrapper);
+
+
+        return flag;
     }
 }

@@ -1,7 +1,5 @@
 package com.takeOut.reggie.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.takeOut.reggie.common.R;
 import com.takeOut.reggie.entity.AddressBook;
 import com.takeOut.reggie.service.AddressBookService;
@@ -47,15 +45,9 @@ public class AddressBookController {
     @PutMapping("default")
     public R<AddressBook> setDefault(@RequestBody AddressBook addressBook, HttpSession session) {
         log.info("addressBook:{}", addressBook);
-        LambdaUpdateWrapper<AddressBook> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(AddressBook::getUserId, session.getAttribute("user"));
-        wrapper.set(AddressBook::getIsDefault, 0);
-        //SQL:update address_book set is_default = 0 where user_id = ?
-        addressBookService.update(wrapper);
 
-        addressBook.setIsDefault(1);
-        //SQL:update address_book set is_default = 1 where id = ?
-        addressBookService.updateById(addressBook);
+        addressBook = addressBookService.setDefault(addressBook, session);
+
         return R.success(addressBook);
     }
 
@@ -77,18 +69,11 @@ public class AddressBookController {
      */
     @GetMapping("default")
     public R<AddressBook> getDefault(HttpSession session) {
-        LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AddressBook::getUserId, session.getAttribute("user"));
-        queryWrapper.eq(AddressBook::getIsDefault, 1);
+        log.info("查询默认地址");
+        AddressBook addressBook =  addressBookService.getDefault(session);
 
-        //SQL:select * from address_book where user_id = ? and is_default = 1
-        AddressBook addressBook = addressBookService.getOne(queryWrapper);
 
-        if (null == addressBook) {
-            return R.error("没有找到该对象");
-        } else {
-            return R.success(addressBook);
-        }
+        return addressBook == null ? R.error("没有找到该对象") : R.success(addressBook);
     }
 
     /**
@@ -96,16 +81,10 @@ public class AddressBookController {
      */
     @GetMapping("/list")
     public R<List<AddressBook>> list(AddressBook addressBook, HttpSession session) {
-        addressBook.setUserId((Long) session.getAttribute("user"));
         log.info("addressBook:{}", addressBook);
-        log.info("session中的用户id:{}", session.getAttribute("user"));
 
-        //条件构造器
-        LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(null != addressBook.getUserId(), AddressBook::getUserId, addressBook.getUserId());
-        queryWrapper.orderByDesc(AddressBook::getUpdateTime);
+        List<AddressBook> list = addressBookService.list(addressBook, session);
 
-        //SQL:select * from address_book where user_id = ? order by update_time desc
-        return R.success(addressBookService.list(queryWrapper));
+        return R.success(list);
     }
 }

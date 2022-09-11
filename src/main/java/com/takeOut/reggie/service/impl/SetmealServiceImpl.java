@@ -1,12 +1,15 @@
 package com.takeOut.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.takeOut.reggie.common.CustomeException;
 import com.takeOut.reggie.dto.SetmealDto;
+import com.takeOut.reggie.entity.Category;
 import com.takeOut.reggie.entity.Setmeal;
 import com.takeOut.reggie.entity.SetmealDish;
 import com.takeOut.reggie.mapper.SetmealMapper;
+import com.takeOut.reggie.service.CategoryService;
 import com.takeOut.reggie.service.SetmealDishService;
 import com.takeOut.reggie.service.SetmealService;
 import org.springframework.beans.BeanUtils;
@@ -25,6 +28,9 @@ import java.util.stream.Collectors;
 public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> implements SetmealService {
     @Autowired
     private SetmealDishService setmealDishService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     /**
      * 新增套餐，同时需要保存套餐和菜品的关联关系
@@ -73,6 +79,12 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         setmealDishService.remove(queryWrapper1);
     }
 
+    /**
+     * 菜品停售或者起售
+     * @param status
+     * @param ids
+     * @return
+     */
     @Override
     public boolean changeStatus(Integer status, List<Long> ids) {
         //停售
@@ -100,6 +112,11 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         return false;
     }
 
+    /**
+     * 根据setmealId查询
+     * @param id
+     * @return
+     */
     @Override
     public SetmealDto getByIdWithDish(Long id) {
         Setmeal setmeal = this.getById(id);//根据setmealId查询setmeal
@@ -142,5 +159,67 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         //批量插入数据
         setmealDishService.saveBatch(setmealDishes);
 
+    }
+
+    /**
+     * 套餐分页查询
+     * @param page
+     * @param pageSize
+     * @param name
+     * @return
+     */
+    @Override
+    public Page<SetmealDto> page(int page, int pageSize, String name) {
+
+        //分页构造器对象
+        Page<Setmeal> pageInfo = new Page<>(page, pageSize);
+        Page<SetmealDto> dtoPage = new Page<>();
+
+        //添加分页条件
+        LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(name != null, Setmeal::getName, name);
+        queryWrapper.orderByDesc(Setmeal::getUpdateTime);
+
+        this.page(pageInfo, queryWrapper);
+
+        BeanUtils.copyProperties(pageInfo, dtoPage, "records");
+
+        //设置records里面的categoryName
+        List<Setmeal> records = pageInfo.getRecords();
+        List<SetmealDto> list = records.stream().map((item) -> {
+            SetmealDto setmealDto = new SetmealDto();
+            BeanUtils.copyProperties(item, setmealDto);
+
+            //根据分类id查询对象，再查询分类名
+            Long categoryId = item.getCategoryId();
+            Category category = categoryService.getById(categoryId);
+            if(category != null){
+                setmealDto.setCategoryName(category.getName());
+            }
+
+            return setmealDto;
+        }).collect(Collectors.toList());
+        dtoPage.setRecords(list);
+
+        return dtoPage;
+    }
+
+    /**
+     * 根据条件查询套餐数据
+     * @param setmeal
+     * @return
+     */
+    @Override
+    public List<Setmeal> list(Setmeal setmeal) {
+
+        LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(setmeal.getCategoryId() != null, Setmeal::getCategoryId, setmeal.getCategoryId());
+        queryWrapper.eq(setmeal.getStatus() != null, Setmeal::getStatus, setmeal.getStatus());
+
+        queryWrapper.orderByDesc(Setmeal::getUpdateTime);
+
+        List<Setmeal> list = this.list(queryWrapper);
+
+        return list;
     }
 }

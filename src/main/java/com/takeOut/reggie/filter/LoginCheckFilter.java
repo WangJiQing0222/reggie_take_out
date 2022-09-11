@@ -67,6 +67,9 @@ public class LoginCheckFilter implements Filter {
             log.info("后台用户已登录,用户id为：{}", request.getSession().getAttribute("employee"));
 
             Long empId = (Long) request.getSession().getAttribute("employee");
+            //仅仅让当前管理员登录使用，缺点：多个用户登录只有最后一个管理员id有效
+            //可以使用HashMap，键为employee+empId，值为empId
+            //还可以放在redis中缓存当前用户当前id
             BaseContext.setCurrentId(empId);
 
             filterChain.doFilter(request, response);
@@ -78,7 +81,8 @@ public class LoginCheckFilter implements Filter {
             log.info("客户已登录,客户id为：{}", request.getSession().getAttribute("user"));
 
             Long userId = (Long) request.getSession().getAttribute("user");
-            BaseContext.setCurrentId(userId);
+//            BaseContext.setCurrentId(userId);
+            request.getSession().setAttribute("user", userId);
 
             filterChain.doFilter(request, response);
             return;

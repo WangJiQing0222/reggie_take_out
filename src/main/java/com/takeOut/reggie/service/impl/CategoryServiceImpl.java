@@ -1,6 +1,7 @@
 package com.takeOut.reggie.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.takeOut.reggie.common.CustomeException;
 import com.takeOut.reggie.entity.Category;
@@ -12,6 +13,8 @@ import com.takeOut.reggie.service.DishService;
 import com.takeOut.reggie.service.SetmealService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * @author 小飞侠NO.1
@@ -57,5 +60,42 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         //正常删除分类
         super.removeById(id);
+    }
+
+    /**
+     * 分页查询
+     * @param page
+     * @param pageSize
+     * @return
+     */
+    @Override
+    public Page<Category> page(int page, int pageSize) {
+        //分页构造器
+        Page<Category> pageInfo = new Page<>(page, pageSize);
+        //条件构造器
+        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByAsc(Category::getSort);
+
+        //进行分页查询
+        this.page(pageInfo, queryWrapper);
+
+        return pageInfo;
+    }
+
+    /**
+     * 根据条件查询分类数据   菜品分类
+     * @param category
+     * @return
+     */
+    @Override
+    public List<Category> list(Category category) {
+        //条件构造器
+        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(category.getType() != null, Category::getType, category.getType());
+        queryWrapper.orderByAsc(Category::getSort).orderByDesc(Category::getUpdateTime);
+
+        List<Category> list = this.list(queryWrapper);
+
+        return list;
     }
 }
