@@ -6,6 +6,8 @@ import com.takeOut.reggie.entity.ShoppingCart;
 import com.takeOut.reggie.service.ShoppingCartService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
@@ -29,6 +31,7 @@ public class ShoppingCartController {
      * @return
      */
     @PostMapping("/add")
+    @CacheEvict(value = "shoppingCart", allEntries = true)
     public R<ShoppingCart> add(@RequestBody ShoppingCart shoppingCart, HttpSession session) {
         log.info("购物车数据:{}", shoppingCart);
 
@@ -43,6 +46,7 @@ public class ShoppingCartController {
      * @return
      */
     @PostMapping("/sub")
+    @CacheEvict(value = "shoppingCart", allEntries = true)
     public R<ShoppingCart> sub(@RequestBody ShoppingCart shoppingCart, HttpSession session) {
         log.info("减少套餐");
 
@@ -57,6 +61,7 @@ public class ShoppingCartController {
      * @return
      */
     @GetMapping("/list")
+    @Cacheable(value = "shoppingCart", key = "'sC'")
     public R<List<ShoppingCart>> list(HttpSession session) {
         log.info("查看购物车...");
 
@@ -71,6 +76,7 @@ public class ShoppingCartController {
      * @return
      */
     @DeleteMapping("clean")
+    @CacheEvict(value = "shoppingCart", allEntries = true)
     public R<String> chean(HttpSession session) {
         LambdaQueryWrapper<ShoppingCart> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ShoppingCart::getUserId, session.getAttribute("user"));

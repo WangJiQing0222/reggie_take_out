@@ -6,6 +6,8 @@ import com.takeOut.reggie.entity.Employee;
 import com.takeOut.reggie.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +59,7 @@ public class EmployeeController {
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "employeePage", allEntries = true)
     public R<String> save(HttpServletRequest request, @RequestBody Employee employee){
         log.info("新增员工,员工信息:{}", employee.toString());
 
@@ -87,7 +90,7 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/page")
-//    @Cacheable(cacheNames = "employeePageCache", key = "'employeePage_' + #page + '_' + #pageSize + '_' + #name")
+    @Cacheable(cacheNames = "employeePage", key = "'employeePage_' + #page + '_' + #pageSize + '_' + #name")
     public R<Page> page(int page, int pageSize, String name){
         log.info("page = {}, pageSize = {}, name = {}", page, pageSize, name);
 
@@ -104,7 +107,7 @@ public class EmployeeController {
      * @return
      */
     @PutMapping
-//    @CacheEvict(cacheNames = "employeeByIdCache", key = "'employeeById_' + #id ")
+    @CacheEvict(value = "employeePage", allEntries = true)
     public R<String> update(HttpServletRequest request, @RequestBody Employee employee){
         log.info(employee.toString());
 
@@ -123,7 +126,6 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/{id}")
-//    @Cacheable(cacheNames = "employeeByIdCache", key = "'employeeById_' + #id ")
     public R<Employee> getById(@PathVariable Long id){
         log.info("根据id查询员工信息");
         Employee employee = employeeService.getById(id);

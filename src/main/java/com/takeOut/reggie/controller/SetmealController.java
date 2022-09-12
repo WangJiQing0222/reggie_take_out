@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,6 +41,10 @@ public class SetmealController {
      * @return
      */
     @PostMapping
+    @Caching(evict = {
+            @CacheEvict(value = "setmealPage", allEntries = true),
+            @CacheEvict(value = "setmealCache", allEntries = true)
+    })
     public R<String> save(@RequestBody SetmealDto setmealDto){
         log.info("套餐信息:{}", setmealDto.toString());
         setmealService.saveWithDish(setmealDto);
@@ -55,6 +60,7 @@ public class SetmealController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "setmealPage", key = "'p_' + #page + '&pS_' + #pageSize + '&n_' + #name")
     public R<Page> page(int page, int pageSize, String name){
         log.info("套餐分页查询");
 
@@ -70,7 +76,10 @@ public class SetmealController {
      * @return
      */
     @DeleteMapping
-    @CacheEvict(value = "setmealCache", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "setmealPage", allEntries = true),
+            @CacheEvict(value = "setmealCache", allEntries = true)
+    })
     public R<String> delete(@RequestParam(value = "ids") List<Long> ids){
         log.info("ids:{}", ids);
 
@@ -105,6 +114,10 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/{status}")
+    @Caching(evict = {
+            @CacheEvict(value = "setmealPage", allEntries = true),
+            @CacheEvict(value = "setmealCache", allEntries = true)
+    })
     public R<String> changeStatus(@PathVariable Integer status, @RequestParam List<Long> ids){
         log.info("c");
         boolean flag = setmealService.changeStatus(status, ids);
@@ -122,7 +135,16 @@ public class SetmealController {
         return R.success(setmealDto);
     }
 
+    /**
+     * 修改套餐
+     * @param setmealDto
+     * @return
+     */
     @PutMapping
+    @Caching(evict = {
+            @CacheEvict(value = "setmealPage", allEntries = true),
+            @CacheEvict(value = "setmealCache", allEntries = true)
+    })
     public R<String> update(@RequestBody SetmealDto setmealDto){
         log.info("更新套餐:{}", setmealDto.toString());
 

@@ -6,6 +6,9 @@ import com.takeOut.reggie.entity.Category;
 import com.takeOut.reggie.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +31,10 @@ public class CategoryController {
      * @return
      */
     @PostMapping
+    @Caching(evict = {
+            @CacheEvict(value = "categoryList", allEntries = true),
+            @CacheEvict(value = "categoryPage", allEntries = true)
+    })
     public R<String> save(@RequestBody Category category) {
         log.info("category:{}" + category);
         categoryService.save(category);
@@ -41,6 +48,7 @@ public class CategoryController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "categoryPage", key = "#page + '_' + #pageSize")
     public R<Page> page(int page, int pageSize){
         Page<Category> pageInfo = categoryService.page(page, pageSize);
 
@@ -55,6 +63,10 @@ public class CategoryController {
      * @return
      */
     @DeleteMapping
+    @Caching(evict = {
+            @CacheEvict(value = "categoryList", allEntries = true),
+            @CacheEvict(value = "categoryPage", allEntries = true)
+    })
     public R<String> delete(Long ids){
         log.info("删除分类, id:{}", ids);
 
@@ -71,6 +83,10 @@ public class CategoryController {
      * @return
      */
     @PutMapping
+    @Caching(evict = {
+            @CacheEvict(value = "categoryList", allEntries = true),
+            @CacheEvict(value = "categoryPage", allEntries = true)
+    })
     public R<String> update(@RequestBody Category category){
         log.info("修改分类信息:{}", category);
 
@@ -85,6 +101,7 @@ public class CategoryController {
      * @return
      */
     @GetMapping("/list")
+    @Cacheable(value = "categoryList", key = "'categoryId_' + #category.id")
     public R<List<Category>> list(Category category){
         log.info("查询分类数据");
 

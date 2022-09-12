@@ -9,6 +9,9 @@ import com.takeOut.reggie.service.OrderService;
 import com.takeOut.reggie.service.ShoppingCartService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
@@ -38,6 +41,11 @@ public class OrderController {
      * @return
      */
     @PostMapping("/submit")
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "orderPage", allEntries = true),
+            @CacheEvict(value = "shoppingCart", allEntries = true)
+    })
     public R<String> submit(@RequestBody Orders orders, HttpSession session) {
         log.info("订单数据:{}", orders);
         orderService.submit(orders, session);
@@ -54,6 +62,7 @@ public class OrderController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "orderPage", key = "#page + '_' + #pageSize + '_' + #number + '_' + #beginTime + '_' +  #endTime")
     public R<Page> page(int page, int pageSize, Long number, LocalDateTime beginTime, LocalDateTime endTime) {
         log.info("订单显示:{}");
 
@@ -69,6 +78,10 @@ public class OrderController {
      * @return
      */
     @PutMapping
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "orderPage", allEntries = true)
+    })
     public R<String> update(@RequestBody Orders orders) {
         log.info("修改订单状态");
 
@@ -85,6 +98,7 @@ public class OrderController {
      * @return
      */
     @GetMapping("/userPage")
+    @Cacheable(value = "userPage", key = "'p_' + #page + 'pS_' + #pageSize")
     public R<Page> userPage(int page, int pageSize, HttpSession session) {
         log.info("userPage...");
 
@@ -100,6 +114,11 @@ public class OrderController {
      * @return
      */
     @PostMapping("/again")
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "orderPage", allEntries = true),
+            @CacheEvict(value = "shoppingCart", allEntries = true)
+    })
     public R<String> again(@RequestBody Orders orders, HttpSession session) {
         log.info("再来一单：{}", orders);
 

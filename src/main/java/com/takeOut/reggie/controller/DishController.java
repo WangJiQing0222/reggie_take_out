@@ -9,10 +9,13 @@ import com.takeOut.reggie.service.DishFlavorService;
 import com.takeOut.reggie.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,8 +46,13 @@ public class DishController {
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "dishPage", allEntries = true)
     public R<String> save(@RequestBody DishDto dishDto){
         log.info(dishDto.toString());
+        //清理所有菜品的缓存数据(全部)
+        Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);
+
 
         dishService.saveWithFlavor(dishDto);
 
@@ -64,6 +72,7 @@ public class DishController {
      * @return
      */
     @GetMapping("/page")
+    @Cacheable(value = "dishPage", key = "'p_' + #page + '&pS_' + #pageSize + '&n_' + #name")
     public R<Page> page(int page, int pageSize, String name){
         log.info("菜品信息分页查询,page:{}, pageSize:{}, name:{}", page, pageSize, name);
 
@@ -94,6 +103,7 @@ public class DishController {
      * @return
      */
     @PutMapping
+    @CacheEvict(value = "dishPage", allEntries = true)
     public R<String> update(@RequestBody DishDto dishDto){
         log.info("更新菜品:{}", dishDto.toString());
 
@@ -102,7 +112,7 @@ public class DishController {
 //        redisTemplate.delete(keys);
 
         //清理某个分类下面的菜品缓存数据(精准)
-        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        String key = "dish_" + dishDto.getCategoryId() + dishDto.getStatus();
         redisTemplate.delete(key);
 
         dishService.updateWithFlavor(dishDto);
@@ -163,8 +173,14 @@ public class DishController {
      * @return
      */
     @DeleteMapping
+    @CacheEvict(value = "dishPage", allEntries = true)
     public R<String> delete(@RequestParam List<Long> ids){
         log.info("通过ids：{}删除", ids);
+        //清理所有菜品的缓存数据(全部)
+        Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);
+
+
         boolean flag = dishService.remove(ids);
         return flag == true ? R.success("删除成功") : R.error("删除失败");
     }
@@ -176,8 +192,14 @@ public class DishController {
      * @return
      */
     @PostMapping("/status/{status}")
+    @CacheEvict(value = "dishPage", allEntries = true)
     public R<String> changeStatus(@PathVariable("status") Integer status, @RequestParam List<Long> ids){
         log.info("菜品停售或者起售");
+        //清理所有菜品的缓存数据(全部)
+        Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);
+
+
         boolean flag = dishService.changeStatus(status, ids);
         return flag == true ? R.success("菜品改变状态成功") : R.error("菜品改变状态失败");
     }
